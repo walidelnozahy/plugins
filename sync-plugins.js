@@ -286,7 +286,7 @@ const generateReadme = (plugins) => {
       plugin list will be generated here
     <!-- AUTO-GENERATED-CONTENT:END -->
      */
-      GENERATE_SERVERLESS_PLUGIN_TABLE: function (content, options) {
+      GENERATE_SERVERLESS_PLUGIN_TABLE: function () {
         // Initialize table header
         let md = '| Plugin | Author | Stats |\n';
         md +=
