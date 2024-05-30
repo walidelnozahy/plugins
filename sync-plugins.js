@@ -9,6 +9,7 @@ import {
   deleteWebflowItem,
   findPluginByName,
   formatTitle,
+  getErrorMessage,
   getNpmDownloads,
   getReadmeContent,
   getRepoInfo,
@@ -176,10 +177,13 @@ const processPlugin = async (
 
     webflowPluginIds.delete(githubPlugin.id);
   } catch (err) {
-    console.error(`Failed to process ${githubPlugin.name}`, err);
+    console.error(
+      `Failed to process ${githubPlugin.name}`,
+      getErrorMessage(err),
+    );
     failedPlugins.push({
       name: githubPlugin.name,
-      reason: `Webflow or Algolia error: ${err.message}`,
+      reason: `Webflow or Algolia error: ${getErrorMessage(err)}`,
     });
   }
 };

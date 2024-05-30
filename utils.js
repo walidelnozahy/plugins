@@ -37,13 +37,15 @@ const makeWebflowRequest = async (endpoint, method, body = null) => {
   const response = await fetch(url, options);
   if (!response.ok) {
     // Read the error response body
-    const errorBody = await response.text(); // or response.json() if the error body is JSON
+    const errorBody = await response.json(); // or response.json() if the error body is JSON
     const error = new Error(
-      `Webflow error! status: ${response.status} ${response.statusText}`,
+      `Webflow error! status: ${response.status} | ${response.statusText}`,
     );
     error.status = response.status;
     error.statusText = response.statusText;
-    error.responseBody = errorBody;
+    error.errorBody = errorBody;
+    error.errorMessage = getErrorMessage(errorBody);
+
     throw error;
   }
 
@@ -136,7 +138,12 @@ export const getErrorMessage = (err) =>
   err?.response?.data?.error ||
   err?.response?.data?.errorMessage ||
   err?.response?.data?.message ||
+  err?.data?.error ||
+  err?.data?.errorMessage ||
+  err?.data?.message ||
+  err?.errorMessage ||
   err?.message ||
+  err?.error ||
   '';
 
 /**
@@ -259,7 +266,7 @@ export const getReadmeContent = async ({ owner, repo, dir, source }) => {
     }
 
     content = decodeBase64(content);
-
+    // console.log('content', content);
     const res = { content };
 
     if (readme) {
@@ -346,6 +353,7 @@ export const createWebflowItem = async (collectionId, fieldData = {}) => {
     await awaitWebflowRateLimit(err, () =>
       createWebflowItem(collectionId, fieldData),
     );
+    throw err;
   }
 };
 /**
@@ -381,6 +389,7 @@ export const updateWebflowItem = async (
     await awaitWebflowRateLimit(err, () =>
       updateWebflowItem(collectionId, itemId, fieldData),
     );
+    throw err;
   }
 };
 /**
@@ -420,6 +429,7 @@ export const listWebflowCollectionItems = async (
     await awaitWebflowRateLimit(err, () =>
       listWebflowCollectionItems(collectionId, offset, itemsLength),
     );
+    throw err;
   }
 };
 /**
@@ -442,6 +452,7 @@ export const deleteWebflowItem = async (collectionId, itemId) => {
     await awaitWebflowRateLimit(err, () =>
       deleteWebflowItem(collectionId, itemId),
     );
+    throw err;
   }
 };
 // Await WebFlow API limit
