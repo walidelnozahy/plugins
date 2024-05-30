@@ -37,13 +37,15 @@ const makeWebflowRequest = async (endpoint, method, body = null) => {
   const response = await fetch(url, options);
   if (!response.ok) {
     // Read the error response body
-    const errorBody = await response.text(); // or response.json() if the error body is JSON
+    const errorBody = await response.json(); // or response.json() if the error body is JSON
     const error = new Error(
-      `Webflow error! status: ${response.status} ${response.statusText}`,
+      `Webflow error! status: ${response.status} | ${response.statusText}`,
     );
     error.status = response.status;
     error.statusText = response.statusText;
-    error.responseBody = errorBody;
+    error.errorBody = errorBody;
+    error.errorMessage = getErrorMessage(errorBody);
+
     throw error;
   }
 
@@ -136,7 +138,12 @@ export const getErrorMessage = (err) =>
   err?.response?.data?.error ||
   err?.response?.data?.errorMessage ||
   err?.response?.data?.message ||
+  err?.data?.error ||
+  err?.data?.errorMessage ||
+  err?.data?.message ||
+  err?.errorMessage ||
   err?.message ||
+  err?.error ||
   '';
 
 /**
@@ -259,7 +266,7 @@ export const getReadmeContent = async ({ owner, repo, dir, source }) => {
     }
 
     content = decodeBase64(content);
-
+    // console.log('content', content);
     const res = { content };
 
     if (readme) {
@@ -339,13 +346,14 @@ export const createWebflowItem = async (collectionId, fieldData = {}) => {
     return res;
   } catch (err) {
     console.error(
-      `Error creating item ${fieldData.name}`,
+      `Webflow error creating item ${fieldData.name}`,
       getErrorMessage(err),
     );
     // Implement rate limit handling and retry logic if necessary
     await awaitWebflowRateLimit(err, () =>
       createWebflowItem(collectionId, fieldData),
     );
+    throw err;
   }
 };
 /**
@@ -374,13 +382,14 @@ export const updateWebflowItem = async (
     return res;
   } catch (err) {
     console.error(
-      `Error updating item ${fieldData.name}`,
+      `Webflow error updating item ${fieldData.name}`,
       getErrorMessage(err),
     );
     // Implement rate limit handling and retry logic if necessary
     await awaitWebflowRateLimit(err, () =>
       updateWebflowItem(collectionId, itemId, fieldData),
     );
+    throw err;
   }
 };
 /**
@@ -395,7 +404,7 @@ export const listWebflowCollectionItems = async (
   offset = 0,
   itemsLength = 0,
 ) => {
-  const endpoint = `/collections/${collectionId}/items?offset=${offset}`;
+  const endpoint = `/collections/${collectionId}/items/live?offset=${offset}`;
 
   try {
     const {
@@ -415,11 +424,15 @@ export const listWebflowCollectionItems = async (
 
     return items;
   } catch (err) {
-    console.error('Error getting collection items', getErrorMessage(err));
+    console.error(
+      'Webflow error getting collection items',
+      getErrorMessage(err),
+    );
     // Implement rate limit handling and retry logic if necessary
     await awaitWebflowRateLimit(err, () =>
       listWebflowCollectionItems(collectionId, offset, itemsLength),
     );
+    throw err;
   }
 };
 /**
@@ -429,7 +442,7 @@ export const listWebflowCollectionItems = async (
  * @returns {Promise<Object>} - The response from the Webflow API.
  */
 export const deleteWebflowItem = async (collectionId, itemId) => {
-  const endpoint = `/collections/${collectionId}/items/${itemId}`;
+  const endpoint = `/collections/${collectionId}/items/${itemId}/live`;
 
   try {
     console.log(`Deleting ${itemId} from Webflow...`);
@@ -437,7 +450,10 @@ export const deleteWebflowItem = async (collectionId, itemId) => {
     console.log(`Deleted item ${itemId} from Webflow successfully`);
     return res;
   } catch (err) {
-    console.error(`Error deleting item ${itemId}`, getErrorMessage(err));
+    console.error(
+      `Webflow error deleting item ${itemId}`,
+      getErrorMessage(err),
+    );
     // Implement rate limit handling and retry logic if necessary
     await awaitWebflowRateLimit(err, () =>
       deleteWebflowItem(collectionId, itemId),
@@ -447,13 +463,15 @@ export const deleteWebflowItem = async (collectionId, itemId) => {
 // Await WebFlow API limit
 const awaitWebflowRateLimit = async (err, callback) => {
   if (
-    err.code === 'too_many_requests' ||
-    err.status === 429 ||
-    err.responseBody.includes('Too Many Requests')
+    err?.code === 'too_many_requests' ||
+    err?.status === 429 ||
+    err?.responseBody?.includes('Too Many Requests')
   ) {
     console.log('awaiting webflow limit');
     await sleep(10000);
     await callback();
+  } else {
+    throw err;
   }
 };
 
@@ -565,7 +583,7 @@ export const updateAlgoliaItem = async (item) => {
   } catch (err) {
     // Log and rethrow the error if the update fails
     console.error(
-      `Failed to update Algolia item: ${item.objectID}`,
+      `Algolia failed to update Algolia item: ${item.objectID}`,
       getErrorMessage(err),
     );
     throw err;
@@ -588,7 +606,7 @@ export const deleteAlgoliaItem = async (objectID) => {
     // Log and rethrow the error if the deletion fails
 
     console.error(
-      `Failed to delete Algolia item: ${objectID}`,
+      `Algolia failed to delete Algolia item: ${objectID}`,
       getErrorMessage(err),
     );
     throw err;
@@ -617,7 +635,7 @@ export const listAlgoliaItems = async () => {
 
     return items;
   } catch (err) {
-    console.error('Failed to list Algolia items', getErrorMessage(err));
+    console.error('Algolia failed to list Algolia items', getErrorMessage(err));
     throw err;
   }
 };

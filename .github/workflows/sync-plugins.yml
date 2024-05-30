@@ -12,6 +12,11 @@ on:
     paths:
       - 'plugins.json'
 
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GITHUB_EVENT_NAME: ${{ github.event_name }}
+  ALGOLIA_APP_ID: V3VM7IN3TH
+
 jobs:
   sync_plugins:
     runs-on: ubuntu-latest
@@ -32,18 +37,18 @@ jobs:
         run: npm install
 
       # Step to run sync process with development environment variables on PR events
-      - name: Run sync process with dev env vars
+      - name: Run sync process DEV
         if: github.event_name == 'pull_request'
         env:
           WEBFLOW_SYNC_AND_PUBLISH_TOKEN: ${{ secrets.WEBFLOW_SYNC_AND_PUBLISH_TOKEN_DEV }}
           WEBFLOW_PLUGINS_COLLECTION_ID: ${{ secrets.WEBFLOW_PLUGINS_COLLECTION_ID_DEV }}
           ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY_DEV }}
-          ALGOLIA_APP_ID: V3VM7IN3TH
+
           ALGOLIA_PLUGINS_INDEX: dev_PLUGINS_SEARCH_GROWTH
         run: node sync-plugins.js
 
       # Step to run sync process with production environment variables on push to master
-      - name: Run sync process with prod env vars
+      - name: Run sync process PROD
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         env:
           WEBFLOW_SYNC_AND_PUBLISH_TOKEN: ${{ secrets.WEBFLOW_SYNC_AND_PUBLISH_TOKEN_PROD }}

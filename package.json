@@ -6,11 +6,9 @@
   "type": "module",
   "license": "MIT",
   "scripts": {
-    "docs": "node generate-docs.js",
     "test": "jest",
-    "publish": "node publish-plugins.js",
-    "lint": "eslint publish-plugins.js",
-    "format": "prettier --write publish-plugins.js"
+    "lint": "eslint sync-plugins.js",
+    "format": "prettier --write sync-plugins.js"
   },
   "repository": {
     "type": "git",
@@ -27,6 +25,7 @@
     "prettier": "^3.2.5"
   },
   "dependencies": {
+    "@actions/github": "^6.0.0",
     "@octokit/rest": "^20.1.1",
     "algoliasearch": "^4.23.3",
     "git-url-parse": "^14.0.0",
