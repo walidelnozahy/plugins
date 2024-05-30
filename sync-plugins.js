@@ -287,9 +287,6 @@ const generateReadme = (plugins) => {
     <!-- AUTO-GENERATED-CONTENT:END -->
      */
       GENERATE_SERVERLESS_PLUGIN_TABLE: function (content, options) {
-        const commandsFile = path.join(__dirname, 'plugins.json');
-        const plugins = JSON.parse(fs.readFileSync(commandsFile, 'utf8'));
-
         // Initialize table header
         let md = '| Plugin | Author | Stats |\n';
         md +=
