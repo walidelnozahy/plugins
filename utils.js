@@ -346,7 +346,7 @@ export const createWebflowItem = async (collectionId, fieldData = {}) => {
     return res;
   } catch (err) {
     console.error(
-      `Error creating item ${fieldData.name}`,
+      `Webflow error creating item ${fieldData.name}`,
       getErrorMessage(err),
     );
     // Implement rate limit handling and retry logic if necessary
@@ -382,7 +382,7 @@ export const updateWebflowItem = async (
     return res;
   } catch (err) {
     console.error(
-      `Error updating item ${fieldData.name}`,
+      `Webflow error updating item ${fieldData.name}`,
       getErrorMessage(err),
     );
     // Implement rate limit handling and retry logic if necessary
@@ -424,7 +424,10 @@ export const listWebflowCollectionItems = async (
 
     return items;
   } catch (err) {
-    console.error('Error getting collection items', getErrorMessage(err));
+    console.error(
+      'Webflow error getting collection items',
+      getErrorMessage(err),
+    );
     // Implement rate limit handling and retry logic if necessary
     await awaitWebflowRateLimit(err, () =>
       listWebflowCollectionItems(collectionId, offset, itemsLength),
@@ -447,12 +450,14 @@ export const deleteWebflowItem = async (collectionId, itemId) => {
     console.log(`Deleted item ${itemId} from Webflow successfully`);
     return res;
   } catch (err) {
-    console.error(`Error deleting item ${itemId}`, getErrorMessage(err));
+    console.error(
+      `Webflow error deleting item ${itemId}`,
+      getErrorMessage(err),
+    );
     // Implement rate limit handling and retry logic if necessary
     await awaitWebflowRateLimit(err, () =>
       deleteWebflowItem(collectionId, itemId),
     );
-    throw err;
   }
 };
 // Await WebFlow API limit
@@ -465,6 +470,8 @@ const awaitWebflowRateLimit = async (err, callback) => {
     console.log('awaiting webflow limit');
     await sleep(10000);
     await callback();
+  } else {
+    throw err;
   }
 };
 
@@ -576,7 +583,7 @@ export const updateAlgoliaItem = async (item) => {
   } catch (err) {
     // Log and rethrow the error if the update fails
     console.error(
-      `Failed to update Algolia item: ${item.objectID}`,
+      `Algolia failed to update Algolia item: ${item.objectID}`,
       getErrorMessage(err),
     );
     throw err;
@@ -599,7 +606,7 @@ export const deleteAlgoliaItem = async (objectID) => {
     // Log and rethrow the error if the deletion fails
 
     console.error(
-      `Failed to delete Algolia item: ${objectID}`,
+      `Algolia failed to delete Algolia item: ${objectID}`,
       getErrorMessage(err),
     );
     throw err;
@@ -628,7 +635,7 @@ export const listAlgoliaItems = async () => {
 
     return items;
   } catch (err) {
-    console.error('Failed to list Algolia items', getErrorMessage(err));
+    console.error('Algolia failed to list Algolia items', getErrorMessage(err));
     throw err;
   }
 };

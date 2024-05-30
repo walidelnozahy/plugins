@@ -33,7 +33,7 @@ const deletedPlugins = [];
 const failedPlugins = [];
 
 const BATCH_SIZE = 5; // Adjust the batch size as needed
-const DELAY_MS = 1000; // Delay between batches to avoid rate limits
+const DELAY_MS = 2000; // Delay between batches to avoid rate limits
 /**
  * Generates a detailed sync report.
  * @returns {string} - The sync report in markdown format.
@@ -69,7 +69,7 @@ const postReportToPR = async (report) => {
 
   // Find an existing comment that starts with the report heading
   const existingComment = comments.find((comment) =>
-    comment.body.startsWith('## Sync Report'),
+    comment.body.includes('## Sync Report'),
   );
 
   if (existingComment) {
