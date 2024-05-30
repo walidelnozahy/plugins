@@ -1,7 +1,9 @@
 import { context, getOctokit } from '@actions/github';
 import fs from 'fs';
 import gitUrlParse from 'git-url-parse';
+import markdownMagic from 'markdown-magic';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import {
   createAlgoliaItem,
   createWebflowItem,
@@ -19,6 +21,10 @@ import {
   updateAlgoliaItem,
   updateWebflowItem,
 } from './utils.js';
+
+// Get the current directory name
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Function to read file
 function getGithubPluginsList() {
@@ -231,6 +237,7 @@ const syncPlugins = async () => {
       }
     }
 
+    await generateReadme(githubPlugins);
     console.log('Sync process completed.');
     const report = await generateReport();
     console.log(report);
@@ -243,5 +250,76 @@ const syncPlugins = async () => {
     process.exit(1);
   }
 };
+const commonPartRe =
+  /(?:(?:^|-)serverless-plugin(?:-|$))|(?:(?:^|-)serverless(?:-|$))/;
 
+/**
+ * Formats the plugin name to title case and removes common parts.
+ * @param {string} string - The plugin name.
+ * @returns {string} - The formatted plugin name.
+ */
+function formatPluginName(string) {
+  return toTitleCase(
+    string.toLowerCase().replace(commonPartRe, '').replace(/-/g, ' '),
+  );
+}
+
+/**
+ * Converts a string to title case.
+ * @param {string} str - The input string.
+ * @returns {string} - The title-cased string.
+ */
+function toTitleCase(str) {
+  return str.replace(
+    /\w\S*/g,
+    (txt) => txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase(),
+  );
+}
+
+const generateReadme = (plugins) => {
+  console.log('Generating README.md');
+  const config = {
+    transforms: {
+      /*
+    In readme.md the below comment block adds the list to the readme
+    <!-- AUTO-GENERATED-CONTENT:START (GENERATE_SERVERLESS_PLUGIN_TABLE)-->
+      plugin list will be generated here
+    <!-- AUTO-GENERATED-CONTENT:END -->
+     */
+      GENERATE_SERVERLESS_PLUGIN_TABLE: function (content, options) {
+        const commandsFile = path.join(__dirname, 'plugins.json');
+        const plugins = JSON.parse(fs.readFileSync(commandsFile, 'utf8'));
+
+        // Initialize table header
+        let md = '| Plugin | Author | Stats |\n';
+        md +=
+          '|:---------------------------|:-----------|:-------------------------:|\n';
+
+        // Sort and process plugins
+        plugins
+          .sort((a, b) => {
+            const aName = a.name.toLowerCase().replace(commonPartRe, '');
+            const bName = b.name.toLowerCase().replace(commonPartRe, '');
+            return aName.localeCompare(bName);
+          })
+          .forEach((data) => {
+            const { owner, name: repo } = gitUrlParse(data.githubUrl);
+
+            // Add plugin details to the table
+            md += `| **[${formatPluginName(data.name)} - \`${data.name.toLowerCase()}\`](${data.githubUrl})** <br/> ${data.description} `;
+            md += `| [${owner}](https://github.com/${owner}) `;
+            md += `| [![GitHub Stars](https://img.shields.io/badge/Stars-0-green?labelColor=black&style=flat&logo=github&logoWidth=8&link=https://github.com/${owner}/${repo})](https://github.com/${owner}/${repo}) `;
+            md += ` [![NPM Downloads](https://img.shields.io/badge/Downloads-0-green?labelColor=black&style=flat&logo=npm&logoWidth=8&link=https://www.npmjs.com/package/${data.name})](https://www.npmjs.com/package/${data.name}) |\n`;
+          });
+
+        return md.trim();
+      },
+    },
+  };
+
+  const markdownPath = path.join(__dirname, 'README.md');
+  markdownMagic(markdownPath, config, () => {
+    console.log('Docs updated!');
+  });
+};
 syncPlugins();
