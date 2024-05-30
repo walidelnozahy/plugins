@@ -14,6 +14,8 @@ on:
 
 env:
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  GITHUB_EVENT_NAME: ${{ github.event_name }}
+  ALGOLIA_APP_ID: V3VM7IN3TH
 
 jobs:
   sync_plugins:
@@ -41,7 +43,7 @@ jobs:
           WEBFLOW_SYNC_AND_PUBLISH_TOKEN: ${{ secrets.WEBFLOW_SYNC_AND_PUBLISH_TOKEN_DEV }}
           WEBFLOW_PLUGINS_COLLECTION_ID: ${{ secrets.WEBFLOW_PLUGINS_COLLECTION_ID_DEV }}
           ALGOLIA_API_KEY: ${{ secrets.ALGOLIA_API_KEY_DEV }}
-          ALGOLIA_APP_ID: V3VM7IN3TH
+
           ALGOLIA_PLUGINS_INDEX: dev_PLUGINS_SEARCH_GROWTH
         run: node sync-plugins.js
 

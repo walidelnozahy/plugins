@@ -27,6 +27,7 @@
     "prettier": "^3.2.5"
   },
   "dependencies": {
+    "@actions/github": "^6.0.0",
     "@octokit/rest": "^20.1.1",
     "algoliasearch": "^4.23.3",
     "git-url-parse": "^14.0.0",

@@ -1,3 +1,4 @@
+import { context, getOctokit } from '@actions/github';
 import fs from 'fs';
 import gitUrlParse from 'git-url-parse';
 import path from 'path';
@@ -186,17 +187,6 @@ const processPlugin = async (
         deletedPlugins.push(webflowPlugin.name);
       }
     }
-    // for (const aloglia of webflowPlugins) {
-    //   if (!findPluginByName(githubPlugins, webflowPlugin.name)) {
-    //     console.log('DELETING WEBFLOW ITEM');
-    //     await deleteWebflowItem(
-    //       process.env.WEBFLOW_PLUGINS_COLLECTION_ID,
-    //       webflowPlugin._id,
-    //     );
-    //     await deleteAlgoliaItem(webflowPlugin.name);
-    //     deletedPlugins.push(webflowPlugin.name);
-    //   }
-    // }
 
     console.log('Sync process completed.');
     console.log(`Created plugins: ${createdPlugins.length}`);
@@ -217,6 +207,29 @@ const processPlugin = async (
       failedPlugins.forEach((plugin) => {
         console.log(`${plugin.name}: ${plugin.reason}`);
       });
+    }
+    // Create a report with the sync results and post as a PR comment
+    const report = `
+## Sync Report
+- Created plugins: ${createdPlugins.length}
+- Updated plugins: ${updatedPlugins.length}
+- Deleted plugins: ${deletedPlugins.length}
+- Failed plugins: ${failedPlugins.length}
+
+${failedPlugins.length > 0 ? '### Failed Plugins Details\n' + failedPlugins.map((plugin) => `- **${plugin.name}**: ${plugin.reason}`).join('\n') : ''}
+    `;
+    if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
+      const token = process.env.GITHUB_TOKEN;
+      const octokit = getOctokit(token);
+      const pullRequestNumber = context.payload.pull_request.number;
+
+      await octokit.rest.issues.createComment({
+        ...context.repo,
+        issue_number: pullRequestNumber,
+        body: report,
+      });
+
+      console.log('Report posted to the PR successfully.');
     }
   } catch (error) {
     console.error('An error occurred during the sync process:', error);
