@@ -47,10 +47,9 @@ const generateReport = () => {
 - **Deleted plugins**: ${deletedPlugins.length}
   ${deletedPlugins.length > 0 ? deletedPlugins.map((plugin) => `  - ${plugin}`).join('\n') : ''}
 - **Failed plugins**: ${failedPlugins.length}
-  ${failedPlugins.length > 0 ? failedPlugins.map((plugin) => `  - **${plugin.name}**: ${plugin.reason}`).join('\n') : ''}
+  ${failedPlugins.length > 0 ? failedPlugins.map((plugin) => `  - **${plugin.name}**: \`${plugin.reason}\``).join('\n') : ''}
   `;
 };
-
 /**
  * Posts a comment to the PR with the sync report or updates the previous comment if it exists.
  * @param {string} report - The sync report.
