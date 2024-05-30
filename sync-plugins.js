@@ -14,7 +14,6 @@ import {
   getRepoInfo,
   listAlgoliaItems,
   listWebflowCollectionItems,
-  sleep,
   updateAlgoliaItem,
   updateWebflowItem,
 } from './utils.js';
@@ -223,8 +222,8 @@ const syncPlugins = async () => {
           process.env.WEBFLOW_PLUGINS_COLLECTION_ID,
           webflowPlugin.id,
         );
-        await deleteAlgoliaItem(webflowPlugin.name);
-        deletedPlugins.push(webflowPlugin.name);
+        await deleteAlgoliaItem(webflowPlugin.fieldData.slug);
+        deletedPlugins.push(webflowPlugin.fieldData.name);
       }
     }
 

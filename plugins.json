@@ -1,5 +1,11 @@
 [
   {
+    "name": "@kakkuk/serverless-aws-apigateway-documentation",
+    "description": "Adds support for AWS API Gateway documentation and model",
+    "githubUrl": "https://github.com/failsafe-engineering/serverless-aws-apigateway-documentation",
+    "status": "active"
+  },
+  {
     "name": "@vulcancreative/serverless-storage",
     "description": "Serverless plugin defining DynamoDB storage primitives; like localStorage but better",
     "githubUrl": "https://github.com/vulcancreative/serverless-storage",

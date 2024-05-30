@@ -395,7 +395,7 @@ export const listWebflowCollectionItems = async (
   offset = 0,
   itemsLength = 0,
 ) => {
-  const endpoint = `/collections/${collectionId}/items?offset=${offset}`;
+  const endpoint = `/collections/${collectionId}/items/live?offset=${offset}`;
 
   try {
     const {
@@ -429,7 +429,7 @@ export const listWebflowCollectionItems = async (
  * @returns {Promise<Object>} - The response from the Webflow API.
  */
 export const deleteWebflowItem = async (collectionId, itemId) => {
-  const endpoint = `/collections/${collectionId}/items/${itemId}`;
+  const endpoint = `/collections/${collectionId}/items/${itemId}/live`;
 
   try {
     console.log(`Deleting ${itemId} from Webflow...`);
@@ -447,9 +447,9 @@ export const deleteWebflowItem = async (collectionId, itemId) => {
 // Await WebFlow API limit
 const awaitWebflowRateLimit = async (err, callback) => {
   if (
-    err.code === 'too_many_requests' ||
-    err.status === 429 ||
-    err.responseBody.includes('Too Many Requests')
+    err?.code === 'too_many_requests' ||
+    err?.status === 429 ||
+    err?.responseBody?.includes('Too Many Requests')
   ) {
     console.log('awaiting webflow limit');
     await sleep(10000);
