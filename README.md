@@ -14,14 +14,13 @@
 
 <br/>
 <br/>
+<div style="padding: 10px; border-radius: 8px; margin-bottom: 20px;">
+  <h3 >🚀 Tip: Introducing Serverless Extensions in Serverless Framework V4</h3>
+  <p >With the release of Serverless Framework V4, we are excited to introduce <a href="https://github.com/serverless/extensions" ><strong>Serverless Extensions</strong></a>. Extensions allow users to deploy a wider variety of serverless use-cases and infrastructure patterns than ever before, including front-end frameworks, AI workflows, APIs, and more.</p>
+  <p ><strong>Note:</strong> Some of these plugins will need to be converted to extensions. For more information, please visit the <a href="https://github.com/serverless/extensions" ><strong>Serverless Extensions repo</strong></a>. Some plugins in this repository might be out of date due to these changes.</p>
+</div>
 
-# Serverless Community Plugins
-
-> ⚠️ **Important Announcement: Serverless Extensions in Serverless Framework V4**
->
-> With the release of Serverless Framework V4, we are excited to introduce [Serverless Extensions](https://github.com/serverless/extensions). Extensions allow users to deploy a wider variety of serverless use-cases and infrastructure patterns than ever before, including front-end frameworks, AI workflows, APIs, and more.
->
-> Some of these plugins will need to be converted to extensions. For more information, please visit the [Serverless Extensions repo](https://github.com/serverless/extensions). **Note:** Some plugins in this repository might be out of date due to these changes.
+<br/>
 
 ## Serverless Community Plugins
 
