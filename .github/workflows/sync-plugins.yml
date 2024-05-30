@@ -12,6 +12,9 @@ on:
     paths:
       - 'plugins.json'
 
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 jobs:
   sync_plugins:
     runs-on: ubuntu-latest
