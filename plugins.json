@@ -1,35 +1,5 @@
 [
   {
-    "name": "@kakkuk/serverless-aws-lambda-dynamic-trigger",
-    "description": "Allows to register sns, sqs and kinesis triggers (events) dynamically.",
-    "githubUrl": "https://github.com/failsafe-engineering/serverless-aws-lambda-dynamic-trigger",
-    "status": "active"
-  },
-  {
-    "name": "@kakkuk/serverless-aws-apigateway-documentation",
-    "description": "Adds support for AWS API Gateway documentation and model",
-    "githubUrl": "https://github.com/failsafe-engineering/serverless-aws-apigateway-documentation",
-    "status": "active"
-  },
-  {
-    "name": "@vulcancreative/serverless-storage",
-    "description": "Serverless plugin defining DynamoDB storage primitives; like localStorage but better",
-    "githubUrl": "https://github.com/vulcancreative/serverless-storage",
-    "status": "active"
-  },
-  {
-    "name": "serverless-aws-function-url-custom-domain",
-    "description": "Setup cloudfront distrubution and route53 record for AWS Lambda with Function URL",
-    "githubUrl": "https://github.com/wangsha/serverless-aws-function-url-custom-domain",
-    "status": "active"
-  },
-  {
-    "name": "serverless-plugin-typetalk",
-    "description": "Sends notification to Typetalk",
-    "githubUrl": "https://github.com/is2ei/serverless-plugin-typetalk",
-    "status": "active"
-  },
-  {
     "name": "serverless-aws-lambda",
     "description": "Plug & Play AWS Lambda NodeJS development tool with local API Gateway and Application Load Balancer support.",
     "githubUrl": "https://github.com/Inqnuam/serverless-aws-lambda",
