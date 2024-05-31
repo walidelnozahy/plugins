@@ -112,7 +112,7 @@ const processPlugin = async (
     if (webflowPlugin) {
       // Check if the content has changed
       const hasChanged = isPluginEqual(githubPlugin, webflowPlugin.fieldData);
-      console.log('hasChanged', hasChanged);
+
       if (hasChanged) {
         console.log('UPDATING WEBFLOW ITEM');
         await updateWebflowItem(
@@ -172,6 +172,7 @@ const processDeletePlugin = async (webflowPlugin) => {
 const syncPlugins = async () => {
   try {
     const githubPlugins = getGithubPluginsList();
+
     console.log(`Found ${githubPlugins.length} Github Plugins`);
 
     const algoliaPlugins = await listAlgoliaItems();
@@ -186,7 +187,11 @@ const syncPlugins = async () => {
     const webflowPluginIds = new Set(
       webflowPlugins.map((plugin) => plugin.name),
     );
-
+    // const plugin = githubPlugins.find(
+    //   (plugin) => plugin.name === 'serverless-apigator',
+    // );
+    // await processPlugin(plugin, webflowPlugins, webflowPluginIds);
+    // return;
     for (let i = 0; i < githubPlugins.length; i += BATCH_SIZE) {
       const batch = githubPlugins.slice(i, i + BATCH_SIZE);
       await Promise.all(

@@ -78,10 +78,17 @@ const formatDate = (date) => {
 const fetchJson = async (url) => {
   try {
     const response = await fetch(url);
+
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-    return await response.json();
+
+    const contentType = response.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return await response.json();
+    } else {
+      return await response.text();
+    }
   } catch (err) {
     console.error(`Failed to fetch JSON from ${url}`, getErrorMessage(err));
     return null;
@@ -119,26 +126,22 @@ export const getNpmDownloads = async ({ packageName, repoName }) => {
  * @returns {Promise<Object>} The repository info.
  */
 const getGitlabRepoInfo = async ({ owner, repo }) => {
-  const apiPath = `https://gitlab.com/api/v4/projects/${encodeURIComponent(`${owner}/${repo}`)}`;
-  const res = await fetchJson(apiPath);
+  try {
+    const apiPath = `https://gitlab.com/api/v4/projects/${encodeURIComponent(`${owner}/${repo}`)}`;
+    const res = await fetchJson(apiPath);
 
-  if (!res) {
     return {
-      githubStars: 0,
-      authorAvatar: '',
-      authorLink: '',
-      authorName: '',
+      githubStars: res.star_count || 0,
+      authorAvatar: res.namespace.avatar_url
+        ? `https://gitlab.com${res.namespace.avatar_url}`
+        : '',
+      authorLink: res.namespace.web_url || '',
+      authorName: res.namespace.name || '',
     };
+  } catch (err) {
+    console.error(`Can't find GitLab repo ${repo}`, getErrorMessage(err));
+    throw err;
   }
-
-  return {
-    githubStars: res.star_count || 0,
-    authorAvatar: res.namespace.avatar_url
-      ? `https://gitlab.com${res.namespace.avatar_url}`
-      : '',
-    authorLink: res.namespace.web_url || '',
-    authorName: res.namespace.name || '',
-  };
 };
 
 export const getErrorMessage = (err) =>
@@ -171,13 +174,8 @@ const getGithubRepoInfo = async ({ owner, repo }) => {
       authorName: res.data.owner.login || '',
     };
   } catch (err) {
-    console.error(`Can't find repo ${repo}`, getErrorMessage(err));
-    return {
-      githubStars: 0,
-      authorAvatar: '',
-      authorLink: '',
-      authorName: '',
-    };
+    console.error(`Can't find GitHub repo ${repo}`, getErrorMessage(err));
+    throw err;
   }
 };
 
@@ -201,7 +199,7 @@ export const getRepoInfo = async ({ owner = '', repo = '', source }) => {
     }
   } catch (err) {
     console.error(
-      `Error getting repo info for ${repo} from ${source}`,
+      `Getting repo info for ${repo} from ${source}`,
       getErrorMessage(err),
     );
     return {
@@ -223,6 +221,7 @@ export const getRepoInfo = async ({ owner = '', repo = '', source }) => {
 const getGitlabReadmeContent = async ({ owner, repo }) => {
   const apiPath = `https://gitlab.com/api/v4/projects/${encodeURIComponent(`${owner}/${repo}`)}/repository/files/README.md/raw?ref=master`;
   const content = await fetchJson(apiPath);
+
   return content;
 };
 
@@ -270,9 +269,9 @@ export const getReadmeContent = async ({ owner, repo, dir, source }) => {
     } else {
       readme = await getGithubReadmeContent({ owner, repo, dir });
       content = _.get(readme, 'data.content');
+      content = decodeBase64(content);
     }
 
-    content = decodeBase64(content);
     // console.log('content', content);
     const res = { content };
 
