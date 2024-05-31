@@ -1,6 +1,7 @@
 import { Octokit } from '@octokit/rest';
 import algoliasearch from 'algoliasearch';
 import _ from 'lodash';
+import { marked } from 'marked';
 
 const algoliaClient = algoliasearch(
   process.env.ALGOLIA_APP_ID,
@@ -272,7 +273,7 @@ export const getReadmeContent = async ({ owner, repo, dir, source }) => {
       content = decodeBase64(content);
     }
 
-    // console.log('content', content);
+    content = marked(content);
     const res = { content };
 
     if (readme) {
