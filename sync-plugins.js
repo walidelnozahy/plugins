@@ -1,4 +1,3 @@
-import { context, getOctokit } from '@actions/github';
 import fs from 'fs';
 import gitUrlParse from 'git-url-parse';
 import markdownMagic from 'markdown-magic';
@@ -40,64 +39,7 @@ const failedPlugins = [];
 
 const BATCH_SIZE = 5; // Adjust the batch size as needed
 const DELAY_MS = 2000; // Delay between batches to avoid rate limits
-/**
- * Generates a detailed sync report.
- * @returns {string} - The sync report in markdown format.
- */
-const generateReport = () => {
-  return `
-## Sync Report
-- **Created plugins**: ${createdPlugins.length}
-  ${createdPlugins.length > 0 ? createdPlugins.map((plugin) => `  - ${plugin}`).join('\n') : ''}
-- **Updated plugins**: ${updatedPlugins.length}
-- **Deleted plugins**: ${deletedPlugins.length}
-  ${deletedPlugins.length > 0 ? deletedPlugins.map((plugin) => `  - ${plugin}`).join('\n') : ''}
-- **Failed plugins**: ${failedPlugins.length}
-  ${failedPlugins.length > 0 ? failedPlugins.map((plugin) => `  - **${plugin.name}**: \`${plugin.reason}\``).join('\n') : ''}
-  `;
-};
-/**
- * Posts a comment to the PR with the sync report or updates the previous comment if it exists.
- * @param {string} report - The sync report.
- */
-const postReportToPR = async (report) => {
-  const token = process.env.GITHUB_TOKEN;
-  const octokit = getOctokit(token);
-  const { owner, repo } = context.repo;
-  const pullRequestNumber = context.payload.pull_request.number;
 
-  // Fetch existing comments on the PR
-  const { data: comments } = await octokit.rest.issues.listComments({
-    owner,
-    repo,
-    issue_number: pullRequestNumber,
-  });
-
-  // Find an existing comment that starts with the report heading
-  const existingComment = comments.find((comment) =>
-    comment.body.includes('## Sync Report'),
-  );
-
-  if (existingComment) {
-    // Update the existing comment
-    await octokit.rest.issues.updateComment({
-      owner,
-      repo,
-      comment_id: existingComment.id,
-      body: report,
-    });
-    console.log('Report updated on the PR successfully.');
-  } else {
-    // Create a new comment
-    await octokit.rest.issues.createComment({
-      owner,
-      repo,
-      issue_number: pullRequestNumber,
-      body: report,
-    });
-    console.log('Report posted to the PR successfully.');
-  }
-};
 /**
  * Processes a single GitHub plugin, syncing it with Webflow and Algolia.
  * @param {Object} githubPlugin - The plugin data from GitHub.
@@ -192,7 +134,27 @@ const processPlugin = async (
     });
   }
 };
-
+/**
+ * Processes a single Webflow plugin for deletion.
+ */
+const processDeletePlugin = async (githubPlugins, webflowPlugin) => {
+  try {
+    if (!findPluginByName(githubPlugins, webflowPlugin.fieldData.name)) {
+      console.log('DELETING WEBFLOW ITEM');
+      await deleteWebflowItem(
+        process.env.WEBFLOW_PLUGINS_COLLECTION_ID,
+        webflowPlugin.id,
+      );
+      await deleteAlgoliaItem(webflowPlugin.fieldData.slug);
+      deletedPlugins.push(webflowPlugin.fieldData.name);
+    }
+  } catch (err) {
+    console.error(
+      `Failed to process deletion of ${webflowPlugin.fieldData.name}`,
+      getErrorMessage(err),
+    );
+  }
+};
 /**
  * Main function to orchestrate the sync process.
  */
@@ -226,24 +188,29 @@ const syncPlugins = async () => {
     }
 
     for (const webflowPlugin of webflowPlugins) {
-      if (!findPluginByName(githubPlugins, webflowPlugin.fieldData.name)) {
-        console.log('DELETING WEBFLOW ITEM');
-        await deleteWebflowItem(
-          process.env.WEBFLOW_PLUGINS_COLLECTION_ID,
-          webflowPlugin.id,
-        );
-        await deleteAlgoliaItem(webflowPlugin.fieldData.slug);
-        deletedPlugins.push(webflowPlugin.fieldData.name);
-      }
+      await processDeletePlugin(githubPlugins, webflowPlugin);
     }
 
     await generateReadme(githubPlugins);
     console.log('Sync process completed.');
-    const report = await generateReport();
-    console.log(report);
-
-    if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
-      await postReportToPR(report);
+    console.log(`Created plugins: ${createdPlugins.length}`);
+    console.log(`Updated plugins: ${updatedPlugins.length}`);
+    console.log(`Deleted plugins: ${deletedPlugins.length}`);
+    console.log(`Failed plugins: ${failedPlugins.length}`);
+    if (createdPlugins.length) {
+      console.log('Created plugins:', createdPlugins.join(', '));
+    }
+    if (updatedPlugins.length) {
+      console.log('Updated plugins:', updatedPlugins.join(', '));
+    }
+    if (deletedPlugins.length) {
+      console.log('Deleted plugins:', deletedPlugins.join(', '));
+    }
+    if (failedPlugins.length) {
+      console.log('Failed plugins:');
+      failedPlugins.forEach((plugin) => {
+        console.log(`${plugin.name}: ${plugin.reason}`);
+      });
     }
   } catch (error) {
     console.error('An error occurred during the sync process:', error);

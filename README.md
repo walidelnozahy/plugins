@@ -1,3 +1,5 @@
+![Plugins](https://github.com/serverless/plugins/assets/22547594/2df9bc84-87b1-4600-acbf-ec039ef0f668)
+
 <br/>
 
 <div align="center">
@@ -13,28 +15,67 @@
 </div>
 
 <br/>
-<br/>
-<div style="padding: 10px; border-radius: 8px; margin-bottom: 20px;">
-  <h3 >🚀 Tip: Introducing Serverless Extensions in Serverless Framework V4</h3>
-  <p >With the release of Serverless Framework V4, we are excited to introduce <a href="https://github.com/serverless/extensions" ><strong>Serverless Extensions</strong></a>. Extensions allow users to deploy a wider variety of serverless use-cases and infrastructure patterns than ever before, including front-end frameworks, AI workflows, APIs, and more.</p>
-  <p ><strong>Note:</strong> Some of these plugins will need to be converted to extensions. For more information, please visit the <a href="https://github.com/serverless/extensions" ><strong>Serverless Extensions repo</strong></a>. Some plugins in this repository might be out of date due to these changes.</p>
-</div>
 
-<br/>
+# Serverless Community Plugins
 
-## Serverless Community Plugins
+Welcome to the Serverless Community Plugins repository! Here, you'll find a collection of plugins created and maintained by the Serverless community. These plugins can extend the functionality of your Serverless applications and make your development process smoother and more efficient.
 
-[Serverless Plugins](https://serverless.com/framework/docs/providers/aws/guide/plugins/) allow users to extend or overwrite the framework's core functionality. Many of these plugins are contributed by our amazing community members! 🎉
+## 📚 Documentation
 
-This repository is meant to be the one stop shop for all the awesome plugins out there in the serverless ecosystem.
+For detailed instructions on how to install and use Serverless plugins, please visit our [documentation section](https://serverless.com/framework/docs/providers/aws/guide/plugins/).
 
-If you have ideas for features or plugins, add a new [thread](https://github.com/serverless/community-plugins/issues) in the issues.
+## 🚀 Getting Started
 
-## Community Contributed Plugins
+### Installing Plugins
 
-Add your plugin to [the `plugins.json` file](https://github.com/serverless/community-plugins/edit/master/plugins.json) with the status to `active`. The readme file will be generated when the PR is merged.
+To install a plugin, you can use the Serverless Framework's CLI. Simply run the following command:
 
-**Note:** Please don't add your plugin at the end of the array in the `plugins.json` file to avoid conflicts. It'd be better if you choose a random place in the array.
+```bash
+serverless plugin install --name <plugin-name>
+```
+
+Replace <plugin-name> with the name of the plugin you want to install. For example:
+
+```bash
+serverless plugin install --name serverless-offline
+```
+
+Using Plugins
+
+Once installed, you can configure the plugin in your serverless.yml file. Here’s an example configuration for a typical plugin:
+
+```yml
+plugins:
+  - <plugin-name>
+
+custom:
+  <plugin-name>:
+    # Plugin-specific configuration
+```
+
+Refer to the plugin’s [documentation section](https://serverless.com/framework/docs/providers/aws/guide/plugins/) for detailed configuration options and usage examples.
+
+#### 🌟 Submitting a New Plugin
+
+We love to see new contributions from the community! If you have created a plugin that you’d like to share, follow these steps to submit it to our community plugin list:
+
+<ol>
+  <li>Add Your Plugin: Add your plugin to the `plugins.json` file. Make sure to include all necessary details such as the plugin name, description, author, and repository URL.</li>
+  <li>Submit a Pull Request: Once you’ve added your plugin, submit a pull request. Our team will review it and merge it if everything looks good.</li>
+</ol>
+
+Here’s an example entry for the plugins.json file:
+
+```json
+{
+  "name": "serverless-new-plugin",
+  "description": "A description of what your plugin does.",
+  "author": "Your Name",
+  "repository": "https://github.com/yourusername/serverless-new-plugin"
+}
+```
+
+### Community Plugins List
 
 <!-- ⛔️ AUTO-GENERATED-CONTENT:START (GENERATE_SERVERLESS_PLUGIN_TABLE)
 - Do not remove or modify this section. Make all updates to plugins.json -->
