@@ -111,7 +111,11 @@ const processPlugin = async (
 
     if (webflowPlugin) {
       // Check if the content has changed
-      const hasChanged = isPluginEqual(githubPlugin, webflowPlugin.fieldData);
+      const hasChanged = isPluginEqual(
+        githubPlugin,
+        webflowPlugin.fieldData,
+        content,
+      );
 
       if (hasChanged) {
         console.log('UPDATING WEBFLOW ITEM');

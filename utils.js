@@ -668,7 +668,11 @@ export const listAndCheckDuplicates = async () => {
  * @param {Object} githubPlugin - Github plugin object
  * @returns True if both are equal
  */
-export const isPluginEqual = (githubPlugin = {}, webflowPlugin = {}) => {
+export const isPluginEqual = (
+  githubPlugin = {},
+  webflowPlugin = {},
+  content,
+) => {
   const webflowPluginToCompare = {
     name: webflowPlugin.name,
     description: webflowPlugin.description,
@@ -682,7 +686,7 @@ export const isPluginEqual = (githubPlugin = {}, webflowPlugin = {}) => {
     github: githubPlugin.githubUrl,
     active:
       githubPlugin.status !== 'none' && githubPlugin.status ? true : false,
-    content: githubPlugin.content,
+    content,
   };
 
   return _.isEqual(webflowPluginToCompare, githubPluginToCompare);
