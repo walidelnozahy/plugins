@@ -74,6 +74,11 @@ const processPlugin = async (
         name: githubPlugin.name,
         reason: 'No README content found',
       });
+
+      // Delete the plugin if it exists in Webflow and no README content is found
+      if (webflowPlugin) {
+        await processDeletePlugin(webflowPlugin);
+      }
       return;
     }
 
@@ -145,17 +150,15 @@ const processPlugin = async (
 /**
  * Processes a single Webflow plugin for deletion.
  */
-const processDeletePlugin = async (githubPlugins, webflowPlugin) => {
+const processDeletePlugin = async (webflowPlugin) => {
   try {
-    if (!findPluginByName(githubPlugins, webflowPlugin.fieldData.name)) {
-      console.log('DELETING WEBFLOW ITEM');
-      await deleteWebflowItem(
-        process.env.WEBFLOW_PLUGINS_COLLECTION_ID,
-        webflowPlugin.id,
-      );
-      await deleteAlgoliaItem(webflowPlugin.fieldData.slug);
-      deletedPlugins.push(webflowPlugin.fieldData.name);
-    }
+    console.log('DELETING WEBFLOW ITEM');
+    await deleteWebflowItem(
+      process.env.WEBFLOW_PLUGINS_COLLECTION_ID,
+      webflowPlugin.id,
+    );
+    await deleteAlgoliaItem(webflowPlugin.fieldData.slug);
+    deletedPlugins.push(webflowPlugin.fieldData.name);
   } catch (err) {
     console.error(
       `Failed to process deletion of ${webflowPlugin.fieldData.name}`,
@@ -198,7 +201,9 @@ const syncPlugins = async () => {
     }
 
     for (const webflowPlugin of webflowPlugins) {
-      await processDeletePlugin(githubPlugins, webflowPlugin);
+      if (!findPluginByName(githubPlugins, webflowPlugin.fieldData.name)) {
+        await processDeletePlugin(webflowPlugin);
+      }
     }
 
     await generateReadme(githubPlugins);
