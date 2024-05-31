@@ -14,6 +14,7 @@ import {
   getNpmDownloads,
   getReadmeContent,
   getRepoInfo,
+  isPluginEqual,
   listAlgoliaItems,
   listWebflowCollectionItems,
   sleep,
@@ -104,14 +105,21 @@ const processPlugin = async (
     };
 
     if (webflowPlugin) {
-      console.log('UPDATING WEBFLOW ITEM');
-      await updateWebflowItem(
-        process.env.WEBFLOW_PLUGINS_COLLECTION_ID,
-        webflowPlugin.id,
-        fieldData,
-      );
-      await updateAlgoliaItem(algoliaItem);
-      updatedPlugins.push(githubPlugin.name);
+      // Check if the content has changed
+      const hasChanged = isPluginEqual(githubPlugin, webflowPlugin.fieldData);
+      console.log('hasChanged', hasChanged);
+      if (hasChanged) {
+        console.log('UPDATING WEBFLOW ITEM');
+        await updateWebflowItem(
+          process.env.WEBFLOW_PLUGINS_COLLECTION_ID,
+          webflowPlugin.id,
+          fieldData,
+        );
+        await updateAlgoliaItem(algoliaItem);
+        updatedPlugins.push(githubPlugin.name);
+      } else {
+        console.log(`No changes detected for ${name}, skipping update.`);
+      }
     } else {
       console.log('CREATING WEBFLOW ITEM');
       await createWebflowItem(
@@ -169,6 +177,7 @@ const syncPlugins = async () => {
     const webflowPlugins = await listWebflowCollectionItems(
       process.env.WEBFLOW_PLUGINS_COLLECTION_ID,
     );
+
     console.log(`Found ${webflowPlugins.length} Webflow Plugins`);
 
     const webflowPluginIds = new Set(
@@ -182,6 +191,7 @@ const syncPlugins = async () => {
           processPlugin(githubPlugin, webflowPlugins, webflowPluginIds),
         ),
       );
+
       if (i + BATCH_SIZE < githubPlugins.length) {
         await sleep(DELAY_MS);
       }
@@ -193,6 +203,7 @@ const syncPlugins = async () => {
 
     await generateReadme(githubPlugins);
     console.log('Sync process completed.');
+
     console.log(`Created plugins: ${createdPlugins.length}`);
     console.log(`Updated plugins: ${updatedPlugins.length}`);
     console.log(`Deleted plugins: ${deletedPlugins.length}`);
@@ -200,9 +211,7 @@ const syncPlugins = async () => {
     if (createdPlugins.length) {
       console.log('Created plugins:', createdPlugins.join(', '));
     }
-    if (updatedPlugins.length) {
-      console.log('Updated plugins:', updatedPlugins.join(', '));
-    }
+
     if (deletedPlugins.length) {
       console.log('Deleted plugins:', deletedPlugins.join(', '));
     }
@@ -247,12 +256,6 @@ const generateReadme = (plugins) => {
   console.log('Generating README.md');
   const config = {
     transforms: {
-      /*
-    In readme.md the below comment block adds the list to the readme
-    <!-- AUTO-GENERATED-CONTENT:START (GENERATE_SERVERLESS_PLUGIN_TABLE)-->
-      plugin list will be generated here
-    <!-- AUTO-GENERATED-CONTENT:END -->
-     */
       GENERATE_SERVERLESS_PLUGIN_TABLE: function () {
         // Initialize table header
         let md = '| Plugin | Author | Stats |\n';
@@ -268,12 +271,13 @@ const generateReadme = (plugins) => {
           })
           .forEach((data) => {
             const { owner, name: repo } = gitUrlParse(data.githubUrl);
+            const repoName = `${owner}/${repo}`;
 
             // Add plugin details to the table
             md += `| **[${formatPluginName(data.name)} - \`${data.name.toLowerCase()}\`](${data.githubUrl})** <br/> ${data.description} `;
             md += `| [${owner}](https://github.com/${owner}) `;
-            md += `| [![GitHub Stars](https://img.shields.io/badge/Stars-0-green?labelColor=black&style=flat&logo=github&logoWidth=8&link=https://github.com/${owner}/${repo})](https://github.com/${owner}/${repo}) `;
-            md += ` [![NPM Downloads](https://img.shields.io/badge/Downloads-0-green?labelColor=black&style=flat&logo=npm&logoWidth=8&link=https://www.npmjs.com/package/${data.name})](https://www.npmjs.com/package/${data.name}) |\n`;
+            md += `| [![GitHub Stars](https://img.shields.io/github/stars/${repoName}.svg?label=Stars&labelColor=black&style=flat&logo=github&logoWidth=8&link=https://github.com/${owner}/${repo})](https://github.com/${owner}/${repo}) <br/> `;
+            md += `[![NPM Downloads](https://img.shields.io/npm/dt/${data.name}.svg?label=Downloads&labelColor=black&style=flat&logo=npm&logoWidth=8&link=https://www.npmjs.com/package/${data.name})](https://www.npmjs.com/package/${data.name}) |\n`;
           });
 
         return md.trim();

@@ -290,29 +290,6 @@ export const getReadmeContent = async ({ owner, repo, dir, source }) => {
     return null;
   }
 };
-/**
- * Check if the same plugin is different between Webflow and Github
- * @param {Object} webflowPlugin - Webflow plugin object
- * @param {Object} githubPlugin - Github plugin object
- * @returns True if both are equal
- */
-export const isPluginEqual = (githubPlugin = {}, webflowPlugin = {}) => {
-  const webflowPluginToCompare = {
-    name: webflowPlugin.name,
-    description: webflowPlugin.description,
-    github: webflowPlugin.github,
-    active: webflowPlugin.active,
-  };
-  const githubPluginToCompare = {
-    name: githubPlugin.name,
-    description: githubPlugin.description,
-    github: githubPlugin.githubUrl,
-    active:
-      githubPlugin.status !== 'none' && githubPlugin.status ? true : false,
-  };
-
-  return _.isEqual(webflowPluginToCompare, githubPluginToCompare);
-};
 
 // Find a plugin by its Name
 export const findPluginByName = (plugins, name) => {
@@ -677,6 +654,31 @@ export const listAndCheckDuplicates = async () => {
     );
     throw err;
   }
+};
+/**
+ * Check if the same plugin is different between Webflow and Github
+ * @param {Object} webflowPlugin - Webflow plugin object
+ * @param {Object} githubPlugin - Github plugin object
+ * @returns True if both are equal
+ */
+export const isPluginEqual = (githubPlugin = {}, webflowPlugin = {}) => {
+  const webflowPluginToCompare = {
+    name: webflowPlugin.name,
+    description: webflowPlugin.description,
+    github: webflowPlugin.github,
+    active: webflowPlugin.active,
+    content: webflowPlugin.content,
+  };
+  const githubPluginToCompare = {
+    name: githubPlugin.name,
+    description: githubPlugin.description,
+    github: githubPlugin.githubUrl,
+    active:
+      githubPlugin.status !== 'none' && githubPlugin.status ? true : false,
+    content: githubPlugin.content,
+  };
+
+  return _.isEqual(webflowPluginToCompare, githubPluginToCompare);
 };
 
 /**
