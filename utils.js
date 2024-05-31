@@ -36,8 +36,15 @@ const makeWebflowRequest = async (endpoint, method, body = null) => {
 
   const response = await fetch(url, options);
   if (!response.ok) {
-    // Read the error response body
-    const errorBody = await response.json(); // or response.json() if the error body is JSON
+    const contentType = response.headers.get('content-type');
+
+    let errorBody;
+    if (contentType && contentType.includes('application/json')) {
+      errorBody = await response.json();
+    } else {
+      errorBody = await response.text();
+    }
+
     const error = new Error(
       `Webflow error! status: ${response.status} | ${response.statusText}`,
     );
