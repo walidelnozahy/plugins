@@ -1,4 +1,3 @@
-import { context, getOctokit } from '@actions/github';
 import fs from 'fs';
 import gitUrlParse from 'git-url-parse';
 import markdownMagic from 'markdown-magic';
@@ -15,6 +14,7 @@ import {
   getNpmDownloads,
   getReadmeContent,
   getRepoInfo,
+  isPluginEqual,
   listAlgoliaItems,
   listWebflowCollectionItems,
   sleep,
@@ -40,64 +40,7 @@ const failedPlugins = [];
 
 const BATCH_SIZE = 5; // Adjust the batch size as needed
 const DELAY_MS = 2000; // Delay between batches to avoid rate limits
-/**
- * Generates a detailed sync report.
- * @returns {string} - The sync report in markdown format.
- */
-const generateReport = () => {
-  return `
-## Sync Report
-- **Created plugins**: ${createdPlugins.length}
-  ${createdPlugins.length > 0 ? createdPlugins.map((plugin) => `  - ${plugin}`).join('\n') : ''}
-- **Updated plugins**: ${updatedPlugins.length}
-- **Deleted plugins**: ${deletedPlugins.length}
-  ${deletedPlugins.length > 0 ? deletedPlugins.map((plugin) => `  - ${plugin}`).join('\n') : ''}
-- **Failed plugins**: ${failedPlugins.length}
-  ${failedPlugins.length > 0 ? failedPlugins.map((plugin) => `  - **${plugin.name}**: \`${plugin.reason}\``).join('\n') : ''}
-  `;
-};
-/**
- * Posts a comment to the PR with the sync report or updates the previous comment if it exists.
- * @param {string} report - The sync report.
- */
-const postReportToPR = async (report) => {
-  const token = process.env.GITHUB_TOKEN;
-  const octokit = getOctokit(token);
-  const { owner, repo } = context.repo;
-  const pullRequestNumber = context.payload.pull_request.number;
 
-  // Fetch existing comments on the PR
-  const { data: comments } = await octokit.rest.issues.listComments({
-    owner,
-    repo,
-    issue_number: pullRequestNumber,
-  });
-
-  // Find an existing comment that starts with the report heading
-  const existingComment = comments.find((comment) =>
-    comment.body.includes('## Sync Report'),
-  );
-
-  if (existingComment) {
-    // Update the existing comment
-    await octokit.rest.issues.updateComment({
-      owner,
-      repo,
-      comment_id: existingComment.id,
-      body: report,
-    });
-    console.log('Report updated on the PR successfully.');
-  } else {
-    // Create a new comment
-    await octokit.rest.issues.createComment({
-      owner,
-      repo,
-      issue_number: pullRequestNumber,
-      body: report,
-    });
-    console.log('Report posted to the PR successfully.');
-  }
-};
 /**
  * Processes a single GitHub plugin, syncing it with Webflow and Algolia.
  * @param {Object} githubPlugin - The plugin data from GitHub.
@@ -131,6 +74,11 @@ const processPlugin = async (
         name: githubPlugin.name,
         reason: 'No README content found',
       });
+
+      // Delete the plugin if it exists in Webflow and no README content is found
+      if (webflowPlugin) {
+        await processDeletePlugin(webflowPlugin);
+      }
       return;
     }
 
@@ -162,14 +110,25 @@ const processPlugin = async (
     };
 
     if (webflowPlugin) {
-      console.log('UPDATING WEBFLOW ITEM');
-      await updateWebflowItem(
-        process.env.WEBFLOW_PLUGINS_COLLECTION_ID,
-        webflowPlugin.id,
-        fieldData,
+      // Check if the content has changed
+      const hasChanged = isPluginEqual(
+        githubPlugin,
+        webflowPlugin.fieldData,
+        content,
       );
-      await updateAlgoliaItem(algoliaItem);
-      updatedPlugins.push(githubPlugin.name);
+
+      if (hasChanged) {
+        console.log('UPDATING WEBFLOW ITEM');
+        await updateWebflowItem(
+          process.env.WEBFLOW_PLUGINS_COLLECTION_ID,
+          webflowPlugin.id,
+          fieldData,
+        );
+        await updateAlgoliaItem(algoliaItem);
+        updatedPlugins.push(githubPlugin.name);
+      } else {
+        console.log(`No changes detected for ${name}, skipping update.`);
+      }
     } else {
       console.log('CREATING WEBFLOW ITEM');
       await createWebflowItem(
@@ -192,13 +151,32 @@ const processPlugin = async (
     });
   }
 };
-
+/**
+ * Processes a single Webflow plugin for deletion.
+ */
+const processDeletePlugin = async (webflowPlugin) => {
+  try {
+    console.log('DELETING WEBFLOW ITEM');
+    await deleteWebflowItem(
+      process.env.WEBFLOW_PLUGINS_COLLECTION_ID,
+      webflowPlugin.id,
+    );
+    await deleteAlgoliaItem(webflowPlugin.fieldData.slug);
+    deletedPlugins.push(webflowPlugin.fieldData.name);
+  } catch (err) {
+    console.error(
+      `Failed to process deletion of ${webflowPlugin.fieldData.name}`,
+      getErrorMessage(err),
+    );
+  }
+};
 /**
  * Main function to orchestrate the sync process.
  */
 const syncPlugins = async () => {
   try {
     const githubPlugins = getGithubPluginsList();
+
     console.log(`Found ${githubPlugins.length} Github Plugins`);
 
     const algoliaPlugins = await listAlgoliaItems();
@@ -207,12 +185,17 @@ const syncPlugins = async () => {
     const webflowPlugins = await listWebflowCollectionItems(
       process.env.WEBFLOW_PLUGINS_COLLECTION_ID,
     );
+
     console.log(`Found ${webflowPlugins.length} Webflow Plugins`);
 
     const webflowPluginIds = new Set(
       webflowPlugins.map((plugin) => plugin.name),
     );
-
+    // const plugin = githubPlugins.find(
+    //   (plugin) => plugin.name === 'serverless-cf-vars',
+    // );
+    // await processPlugin(plugin, webflowPlugins, webflowPluginIds);
+    // return;
     for (let i = 0; i < githubPlugins.length; i += BATCH_SIZE) {
       const batch = githubPlugins.slice(i, i + BATCH_SIZE);
       await Promise.all(
@@ -220,6 +203,7 @@ const syncPlugins = async () => {
           processPlugin(githubPlugin, webflowPlugins, webflowPluginIds),
         ),
       );
+
       if (i + BATCH_SIZE < githubPlugins.length) {
         await sleep(DELAY_MS);
       }
@@ -227,23 +211,29 @@ const syncPlugins = async () => {
 
     for (const webflowPlugin of webflowPlugins) {
       if (!findPluginByName(githubPlugins, webflowPlugin.fieldData.name)) {
-        console.log('DELETING WEBFLOW ITEM');
-        await deleteWebflowItem(
-          process.env.WEBFLOW_PLUGINS_COLLECTION_ID,
-          webflowPlugin.id,
-        );
-        await deleteAlgoliaItem(webflowPlugin.fieldData.slug);
-        deletedPlugins.push(webflowPlugin.fieldData.name);
+        await processDeletePlugin(webflowPlugin);
       }
     }
 
     await generateReadme(githubPlugins);
     console.log('Sync process completed.');
-    const report = await generateReport();
-    console.log(report);
 
-    if (process.env.GITHUB_EVENT_NAME === 'pull_request') {
-      await postReportToPR(report);
+    console.log(`Created plugins: ${createdPlugins.length}`);
+    console.log(`Updated plugins: ${updatedPlugins.length}`);
+    console.log(`Deleted plugins: ${deletedPlugins.length}`);
+    console.log(`Failed plugins: ${failedPlugins.length}`);
+    if (createdPlugins.length) {
+      console.log('Created plugins:', createdPlugins.join(', '));
+    }
+
+    if (deletedPlugins.length) {
+      console.log('Deleted plugins:', deletedPlugins.join(', '));
+    }
+    if (failedPlugins.length) {
+      console.log('Failed plugins:');
+      failedPlugins.forEach((plugin) => {
+        console.log(`${plugin.name}: ${plugin.reason}`);
+      });
     }
   } catch (error) {
     console.error('An error occurred during the sync process:', error);
@@ -280,12 +270,6 @@ const generateReadme = (plugins) => {
   console.log('Generating README.md');
   const config = {
     transforms: {
-      /*
-    In readme.md the below comment block adds the list to the readme
-    <!-- AUTO-GENERATED-CONTENT:START (GENERATE_SERVERLESS_PLUGIN_TABLE)-->
-      plugin list will be generated here
-    <!-- AUTO-GENERATED-CONTENT:END -->
-     */
       GENERATE_SERVERLESS_PLUGIN_TABLE: function () {
         // Initialize table header
         let md = '| Plugin | Author | Stats |\n';
@@ -301,12 +285,13 @@ const generateReadme = (plugins) => {
           })
           .forEach((data) => {
             const { owner, name: repo } = gitUrlParse(data.githubUrl);
+            const repoName = `${owner}/${repo}`;
 
             // Add plugin details to the table
             md += `| **[${formatPluginName(data.name)} - \`${data.name.toLowerCase()}\`](${data.githubUrl})** <br/> ${data.description} `;
             md += `| [${owner}](https://github.com/${owner}) `;
-            md += `| [![GitHub Stars](https://img.shields.io/badge/Stars-0-green?labelColor=black&style=flat&logo=github&logoWidth=8&link=https://github.com/${owner}/${repo})](https://github.com/${owner}/${repo}) `;
-            md += ` [![NPM Downloads](https://img.shields.io/badge/Downloads-0-green?labelColor=black&style=flat&logo=npm&logoWidth=8&link=https://www.npmjs.com/package/${data.name})](https://www.npmjs.com/package/${data.name}) |\n`;
+            md += `| [![GitHub Stars](https://img.shields.io/github/stars/${repoName}.svg?label=Stars&labelColor=black&style=flat&logo=github&logoWidth=8&link=https://github.com/${owner}/${repo})](https://github.com/${owner}/${repo}) <br/> `;
+            md += `[![NPM Downloads](https://img.shields.io/npm/dt/${data.name}.svg?label=Downloads&labelColor=black&style=flat&logo=npm&logoWidth=8&link=https://www.npmjs.com/package/${data.name})](https://www.npmjs.com/package/${data.name}) |\n`;
           });
 
         return md.trim();
