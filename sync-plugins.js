@@ -187,11 +187,11 @@ const syncPlugins = async () => {
     const webflowPluginIds = new Set(
       webflowPlugins.map((plugin) => plugin.name),
     );
-    const plugin = githubPlugins.find(
-      (plugin) => plugin.name === '@stratiformdigital/serverless-online',
-    );
-    await processPlugin(plugin, webflowPlugins, webflowPluginIds);
-    return;
+    // const plugin = githubPlugins.find(
+    //   (plugin) => plugin.name === 'serverless-cf-vars',
+    // );
+    // await processPlugin(plugin, webflowPlugins, webflowPluginIds);
+    // return;
     for (let i = 0; i < githubPlugins.length; i += BATCH_SIZE) {
       const batch = githubPlugins.slice(i, i + BATCH_SIZE);
       await Promise.all(
