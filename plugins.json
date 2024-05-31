@@ -23,12 +23,7 @@
     "githubUrl": "https://github.com/wangsha/serverless-aws-function-url-custom-domain",
     "status": "active"
   },
-  {
-    "name": "serverless-plugin-typetalk",
-    "description": "Sends notification to Typetalk",
-    "githubUrl": "https://github.com/is2ei/serverless-plugin-typetalk",
-    "status": "active"
-  },
+
   {
     "name": "serverless-aws-lambda",
     "description": "Plug & Play AWS Lambda NodeJS development tool with local API Gateway and Application Load Balancer support.",
